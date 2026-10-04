@@ -1,0 +1,53 @@
+{
+  "name": "@mueo/cocofaith-sdk",
+  "version": "3.0.0-alpha.3",
+  "description": "CoCoFaith v3 core contracts and gameplay development SDK",
+  "author": "Mueo <mueo@mueoo.com>",
+  "license": "GPL-3.0-or-later",
+  "sideEffects": false,
+  "type": "commonjs",
+  "main": "./lib/index.js",
+  "module": "./lib/index.mjs",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.js"
+    },
+    "./core": {
+      "types": "./lib/core/index.d.ts",
+      "import": "./lib/core/index.mjs",
+      "require": "./lib/core/index.js"
+    },
+    "./gameplay": {
+      "types": "./lib/gameplay/index.d.ts",
+      "import": "./lib/gameplay/index.mjs",
+      "require": "./lib/gameplay/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && npm run build && node --test tests/*.test.cjs",
+    "prepublishOnly": "npm test"
+  },
+  "peerDependencies": {
+    "koishi": "^4.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "koishi": "^4.16.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  }
+}
