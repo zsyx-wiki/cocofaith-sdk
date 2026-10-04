@@ -4,6 +4,14 @@
   "description": "CoCoFaith v3 core contracts and gameplay development SDK",
   "author": "Mueo <mueo@mueoo.com>",
   "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zsyx-wiki/cocofaith-sdk.git"
+  },
+  "homepage": "https://github.com/zsyx-wiki/cocofaith-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/zsyx-wiki/cocofaith-sdk/issues"
+  },
   "sideEffects": false,
   "type": "commonjs",
   "main": "./lib/index.js",
@@ -47,7 +55,6 @@
     "typescript": "^5.9.2"
   },
   "publishConfig": {
-    "access": "public",
-    "tag": "alpha"
+    "access": "public"
   }
 }
