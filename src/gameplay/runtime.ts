@@ -1,3 +1,4 @@
+import { loadGameplayState, GAMEPLAY_STATE_VERSION_KEY, type GameplayStateDefinition } from "./state";
 import { createHash } from "node:crypto";
 import type { FaithBusinessCoreScope } from "../core";
 import { GameplayError } from "./errors";
@@ -19,12 +20,14 @@ export interface GameplayExecutionInput<C extends Record<string, unknown>, S> {
   readonly core: FaithBusinessCoreScope;
   readonly config: Readonly<C>;
   readonly service: S;
+  readonly stateDefinition?: GameplayStateDefinition<Record<string, unknown>, Record<string, unknown>>;
 }
 
 export async function executeGameplayCommand<C extends Record<string, unknown>, S>(
   input: GameplayExecutionInput<C, S>,
 ): Promise<GameplayResult> {
   const { command } = input;
+  if (!command.run) throw new GameplayError("INVALID_INPUT", `命令 ${input.business}/${command.id} 需要子命令`);
   if (input.uid === null && command.guest !== true) {
     throw new GameplayError("UNREGISTERED", "用户尚未注册。");
   }
@@ -40,11 +43,12 @@ export async function executeGameplayCommand<C extends Record<string, unknown>, 
 
   const run = command.run as (
     context: GameplayCommandContext<C, S, number | null>,
-  ) => ReturnType<typeof command.run>;
+  ) => ReturnType<NonNullable<typeof command.run>>;
   const output = await run({
     uid: input.uid,
     event: input.event,
     args: input.args,
+    params: input.command.parameters?.parse(input.args) ?? {},
     path: input.path,
     core: input.core,
     config: input.config,
@@ -65,8 +69,7 @@ async function executeAtomic<C extends Record<string, unknown>, S>(
     async (tx) => {
       const row = await tx.data.get();
       const state = {
-        data: structuredClone(row.private),
-        publicData: structuredClone(row.public),
+        ...(input.stateDefinition ? loadGameplayState(input.stateDefinition, row) : { data: structuredClone(row.private), publicData: structuredClone(row.public) }),
         gameDay: input.core.gameDay.currentDate(),
       };
       const economy = Object.freeze({
@@ -86,8 +89,11 @@ async function executeAtomic<C extends Record<string, unknown>, S>(
         uid: input.uid,
         event: input.event,
         args: input.args,
+    params: input.command.parameters?.parse(input.args) ?? {},
         path: input.path,
-        core: input.core,
+        core: Object.freeze({ name: input.core.name, runtime: input.core.runtime, gameDay: input.core.gameDay }),
+        afterCommit: tx.afterCommit,
+        afterRollback: tx.afterRollback,
         config: input.config,
         service: input.service,
         tx,
@@ -97,8 +103,11 @@ async function executeAtomic<C extends Record<string, unknown>, S>(
         user: tx.users,
       } satisfies GameplayAtomicCommandContext<C, S>);
 
-      await tx.data.set({ private: state.data, public: state.publicData });
-      return normalizeGameplayResult(output);
+      const result = normalizeGameplayResult(output);
+      const data = input.stateDefinition ? input.stateDefinition.parse(state.data) : state.data;
+      const publicData = input.stateDefinition ? input.stateDefinition.parsePublic(state.publicData) : state.publicData;
+      await tx.data.set({ private: input.stateDefinition ? { ...data, [GAMEPLAY_STATE_VERSION_KEY]: input.stateDefinition.version } : data, public: publicData });
+      return result;
     },
     {
       source,

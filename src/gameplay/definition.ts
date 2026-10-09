@@ -3,7 +3,10 @@ import type { GameplayDefinition, GameplayInput } from "./types";
 export function defineGameplay<
   C extends Record<string, unknown> = Record<string, never>,
   S = undefined,
->(definition: GameplayInput<C, S>): GameplayDefinition<C, S> {
+  D extends Record<string, unknown> = Record<string, unknown>,
+  P extends Record<string, unknown> = Record<string, unknown>,
+  A extends Record<string, unknown> = Record<string, unknown>,
+>(definition: GameplayInput<C, S, D, P, A>): GameplayDefinition<C, S, D, P, A> {
   if (!definition || typeof definition !== "object") {
     throw new TypeError("玩法定义必须是对象");
   }
@@ -13,6 +16,7 @@ export function defineGameplay<
   if (!Array.isArray(definition.commands) || !definition.commands.length) {
     throw new TypeError(`玩法 ${definition.name} 至少需要一个命令`);
   }
+  validateGameplayCommands(definition.commands, definition.name);
   return Object.freeze({
     ...definition,
     kind: "faith-gameplay" as const,
@@ -27,4 +31,27 @@ export function isGameplayDefinition(
   return !!value
     && typeof value === "object"
     && (value as { kind?: unknown }).kind === "faith-gameplay";
+}
+
+export function validateGameplayCommands(commands: readonly import("./types").GameplayCommandDefinition<any, any>[], path: string, depth = 0): void {
+  if (depth > 16) throw new TypeError(`${path}: 命令嵌套超过 16 层`);
+  const ids = new Set<string>(), triggers = new Set<string>();
+  for (const command of commands) {
+    const location = `${path}/${command?.id ?? "unknown"}`;
+    if (!command || !/^[a-z][a-z0-9_-]{0,63}$/.test(command.id) || ids.has(command.id)) throw new TypeError(`${location}: 命令 ID 无效或重复`);
+    ids.add(command.id);
+    if (!Array.isArray(command.triggers) || (!command.triggers.length && typeof command.match !== "function")) throw new TypeError(`${location}: 缺少触发词或动态匹配器`);
+    for (const trigger of command.triggers) {
+      if (typeof trigger !== "string" || !trigger.trim() || /\s/.test(trigger) || triggers.has(trigger.toLowerCase())) throw new TypeError(`${location}: 触发词无效或重复`);
+      triggers.add(trigger.toLowerCase());
+    }
+    if (command.guest !== undefined && typeof command.guest !== "boolean") throw new TypeError(`${location}: guest 必须是布尔值`);
+    if (command.atomic !== undefined && command.atomic !== false && command.atomic !== "user") throw new TypeError(`${location}: atomic 无效`);
+    if (command.guest && command.atomic) throw new TypeError(`${location}: 访客不能执行用户原子命令`);
+    if (command.scenes?.some(scene => scene !== "group" && scene !== "private")) throw new TypeError(`${location}: 场景无效`);
+    if (command.match && (depth > 0 || typeof command.match !== "function")) throw new TypeError(`${location}: 动态匹配器只能位于根命令`);
+    if (typeof command.run !== "function" && !command.children?.length) throw new TypeError(`${location}: 缺少执行器或子命令`);
+    if (command.parameters && typeof command.parameters.parse !== "function") throw new TypeError(`${location}: 参数定义无效`);
+    if (command.children) validateGameplayCommands(command.children, location, depth + 1);
+  }
 }
