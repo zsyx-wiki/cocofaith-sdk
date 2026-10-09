@@ -6,6 +6,8 @@ export default defineConfig({
     "core/index": "src/core/index.ts",
     "gameplay/index": "src/gameplay/index.ts",
     "testing/index": "src/testing/index.ts",
+    "runtime/index": "src/runtime/index.ts",
+    "protocol/index": "src/protocol/index.ts",
   },
   outDir: "lib",
   format: ["cjs", "esm"],

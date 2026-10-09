@@ -39,6 +39,7 @@ test('nested configuration validates defaults and composed constraints', () => {
   assert.throws(() => config.parse({ mode: 'invalid' }))
   assert.throws(() => config.parse({ rewards: [-1] }))
   assert.throws(() => config.parse({ rewards: [1, 2], limits: { max: 1 } }))
+  assert.throws(() => config.schema({ rewards: [1, 2], limits: { max: 1 } }))
 })
 
 test('results reject invalid payloads and preserve delivery options', () => {
@@ -48,4 +49,16 @@ test('results reject invalid payloads and preserve delivery options', () => {
   const result = gameplay.text('ok', { delivery: 'proactive-required', broadcast: { id: 'notice', content: 'hello' } })
   gameplay.assertGameplayResult(result)
   assert.equal(result.delivery, 'proactive-required')
+})
+
+
+test('string and array schemas enforce the same limits as parsers', () => {
+  const config = gameplay.defineGameplayConfig({ label: gameplay.gameplayString('ok', { minLength: 2, maxLength: 4 }), values: gameplay.gameplayArray(gameplay.gameplayInteger(1), [1], { maxLength: 1 }) })
+  assert.throws(() => config.schema({ label: 'x' }))
+  assert.throws(() => config.parse({ label: 'x' }))
+  assert.throws(() => config.schema({ values: [1, 2] }))
+  assert.throws(() => config.parse({ values: [1, 2] }))
+  const args = gameplay.defineGameplayParameters({ count: gameplay.gameplayArgument(gameplay.gameplayOptional(gameplay.gameplayInteger(1)), { optional: true }) })
+  assert.equal(args.parse(['2']).count, 2)
+  assert.equal(args.parse([]).count, undefined)
 })
