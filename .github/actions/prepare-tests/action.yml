@@ -1,0 +1,13 @@
+name: Prepare test dependencies
+description: Install declared dependencies and build release-matched CoCoFaith test implementations.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v6
+      with:
+        node-version: "24"
+        registry-url: "https://registry.npmjs.org"
+        package-manager-cache: false
+    - name: Install package and test dependencies
+      shell: bash
+      run: npm install
