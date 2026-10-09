@@ -26,3 +26,8 @@ test('Core contract accepts structural implementations and rejects incompatible 
 test('Core contract rejects missing capability inspection', () => {
   assert.throws(() => assertFaithCoreContract({ apiVersion: '3.0' }), /Core API/)
 })
+
+test('invalid scopes identify the module and missing API', () => {
+  const { assertFaithBusinessCoreScope } = require('../lib/core/index.js')
+  assert.throws(() => assertFaithBusinessCoreScope({ name: 'probe' }), /probe.*lifecycle.onReady/)
+})
