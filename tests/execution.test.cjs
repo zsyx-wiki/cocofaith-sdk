@@ -54,3 +54,35 @@ test('definitions fail early for invalid combinations and command trees', () => 
   const host = createGameplayTestHarness(definition)
   return host.run('root.child').then(result => assert.equal(result.content, 'ok'))
 })
+
+test('test host returns complete economy and user contracts', async () => {
+  const host = createGameplayTestHarness(g.defineGameplay({ name: 'contracts', commands: [{ id: 'run', triggers: ['run'], atomic: 'user', async run({ economy, user }) {
+    const reward = await economy.reward({ gold: 5 })
+    assert.equal(reward.before.gold, 10)
+    assert.equal(reward.after.gold, 15)
+    assert.equal(reward.user.status, 'active')
+    assert.equal(reward.requested.gold, 5)
+    const paid = await economy.pay({ gold: 2 })
+    assert.deepEqual(paid.faiths, [])
+    await user.setFaiths(['test'])
+    await user.setProfession('test_profession')
+    assert.equal((await user.get()).profession_id, 'test_profession')
+    return 'ok'
+  } }] }), { gold: 10 })
+  await host.run('run')
+  assert.equal(host.snapshot().gold, 13)
+  assert.deepEqual(host.snapshot().faiths, ['test'])
+})
+
+test('test host cleans resources after setup and disposal failures', async () => {
+  let cleaned = 0
+  const broken = createGameplayTestHarness(g.defineGameplay({ name: 'broken', setup({ defer }) { defer(() => cleaned++); throw new Error('setup') }, commands: [{ id: 'run', triggers: ['run'], run: () => 'ok' }] }))
+  await assert.rejects(broken.run('run'))
+  assert.equal(cleaned, 1)
+  const host = createGameplayTestHarness(g.defineGameplay({ name: 'cleanup', setup({ defer }) { const resource = defer(() => cleaned++); defer(() => { throw new Error('cleanup') }); return resource }, dispose(resource) { return resource.dispose() }, commands: [{ id: 'run', triggers: ['run'], run: () => 'ok' }] }))
+  await host.run('run')
+  await assert.rejects(host.dispose(), AggregateError)
+  assert.equal(cleaned, 2)
+  await host.dispose()
+  assert.equal(cleaned, 2)
+})
