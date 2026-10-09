@@ -72,5 +72,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "schemastery": "^3.18.0"
   }
 }

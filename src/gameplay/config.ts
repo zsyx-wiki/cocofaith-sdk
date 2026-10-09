@@ -1,4 +1,4 @@
-import { Schema } from "koishi";
+import Schema from "schemastery";
 export interface GameplayConfigField<T> {
     readonly defaultValue: T;
     readonly inputKind?: "number" | "boolean" | "string";
