@@ -27,6 +27,7 @@ export function defineGameplayConfig<T extends GameplayConfigShape>(
     Object.entries(shape).map(([key, field]) => [key, field.schema]),
   );
 
+  for (const [key, field] of Object.entries(shape)) field.parse(field.defaultValue, key);
   return Object.freeze({
     defaults: Object.freeze({ ...defaults }),
     schema: Schema.object(schemas) as Schema<InferGameplayConfig<T>>,
@@ -115,4 +116,55 @@ export function gameplayString(
       return value;
     },
   });
+}
+
+export function gameplayEnum<const T extends readonly [string, ...string[]]>(
+  values: T, defaultValue: T[number], description?: string,
+): GameplayConfigField<T[number]> {
+  const choices = Object.freeze([...values]);
+  const schema = Schema.union(choices.map(value => Schema.const(value))).default(defaultValue);
+  if (description) schema.description(description);
+  return Object.freeze({ defaultValue, schema, parse(value: unknown, key: string) {
+    if (typeof value !== "string" || !choices.includes(value)) throw new TypeError(`${key} 必须是 ${choices.join(" / ")}`);
+    return value as T[number];
+  } });
+}
+
+export function gameplayArray<T>(field: GameplayConfigField<T>, defaultValue: readonly T[] = [],
+  options: { minLength?: number; maxLength?: number; description?: string } = {},
+): GameplayConfigField<T[]> {
+  const schema = Schema.array(field.schema).default([...defaultValue]);
+  if (options.description) schema.description(options.description);
+  return Object.freeze({ defaultValue: [...defaultValue], schema, parse(value: unknown, key: string) {
+    if (!Array.isArray(value)) throw new TypeError(`${key} 必须是数组`);
+    if (value.length < (options.minLength ?? 0) || value.length > (options.maxLength ?? Infinity)) throw new RangeError(`${key} 数组长度超出范围`);
+    return value.map((item, index) => field.parse(item, `${key}[${index}]`));
+  } });
+}
+
+export function gameplayObject<T extends GameplayConfigShape>(shape: T): GameplayConfigField<InferGameplayConfig<T>> {
+  const definition = defineGameplayConfig(shape);
+  return Object.freeze({ defaultValue: structuredClone(definition.defaults), schema: definition.schema,
+    parse(value: unknown, key: string) {
+      try { return definition.parse(value); }
+      catch (cause) { throw new TypeError(`${key}: ${cause instanceof Error ? cause.message : String(cause)}`, { cause }); }
+    },
+  });
+}
+
+export function gameplayOptional<T>(field: GameplayConfigField<T>): GameplayConfigField<T | undefined> {
+  return Object.freeze({ defaultValue: undefined, schema: field.schema.required(false) as Schema<T | undefined>,
+    parse(value: unknown, key: string) { return value === undefined ? undefined : field.parse(value, key); },
+  });
+}
+
+export function refineGameplayConfig<C extends Record<string, unknown>>(
+  definition: GameplayConfigDefinition<C>, validate: (value: Readonly<C>) => void,
+): GameplayConfigDefinition<C> {
+  validate(definition.defaults);
+  return Object.freeze({ ...definition, parse(value: unknown) {
+    const parsed = definition.parse(value);
+    validate(parsed);
+    return parsed;
+  } });
 }

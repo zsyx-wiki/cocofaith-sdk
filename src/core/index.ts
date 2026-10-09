@@ -1,4 +1,4 @@
-import type { Model } from "koishi";
+import type { Field, Model } from "koishi";
 
 export const FAITH_CORE_API_VERSION = "3.0";
 
@@ -40,6 +40,30 @@ export interface FaithCoreUserData {
   updated_at: Date;
 }
 
+export interface FaithOpenableDefinition {
+  guaranteed?: { gold?: number; ascension_score?: number; audience_score?: number };
+  independentDrops?: readonly { item: string; chance: number; quantity?: number }[];
+  randomDrop?: { goldRange?: readonly [number, number]; itemCount?: number; itemPool: readonly { level: string; weight: number }[] };
+}
+export interface FaithEffectRow {
+  id: number;
+  owner: string;
+  target_type: "user" | "faith" | "global";
+  target: string;
+  value_type: string;
+  modifier: number;
+  fixed_bonus: number;
+  source: string;
+  starts_at: Date;
+  expires_at: Date | null;
+  metadata: Record<string, unknown>;
+}
+export interface FaithBusinessEffectsApi {
+  create(input: Omit<FaithEffectRow, "id" | "owner">): Promise<FaithEffectRow>;
+  remove(id: number): Promise<unknown>;
+  list(query?: Partial<Pick<FaithEffectRow, "target_type" | "target" | "value_type">>): Promise<FaithEffectRow[]>;
+}
+
 export interface FaithItemDefinition {
   item_id: string;
   name: string;
@@ -51,7 +75,7 @@ export interface FaithItemDefinition {
   price: number;
   obtainable: boolean;
   actions?: readonly string[];
-  openable?: unknown;
+  openable?: FaithOpenableDefinition;
 }
 
 export interface FaithOpenResult {
@@ -495,13 +519,15 @@ export interface FaithBusinessCoreScope {
   readonly statusIdentities: FaithBusinessStatusIdentitiesApi;
   readonly faiths: FaithBusinessFaithsApi;
   readonly transaction: FaithBusinessTransactionApi;
-  readonly effects: Record<string, unknown>;
+  readonly effects: FaithBusinessEffectsApi;
   readonly bulk: FaithBusinessBulkApi;
   readonly economy: FaithBusinessEconomyApi;
   readonly gameDay: { currentDate(now?: Date): string };
   readonly data: { get(uid: number): Promise<{ private: Record<string, unknown>; public: Record<string, unknown> }>; set(uid: number, value: { private?: Record<string, unknown>; public?: Record<string, unknown> }): Promise<unknown> };
-  readonly table: FaithAtomicScope["table"];
-  registerTable(fields: Record<string, unknown>, config?: Partial<Model.Config>): string;
+  readonly table: FaithAtomicScope["table"] & {
+    upsert(values: readonly Record<string, unknown>[], keys?: readonly string[]): Promise<unknown>;
+  };
+  registerTable(fields: Record<string, Field.Type | Field>, config?: Partial<Model.Config>): string;
 }
 
 export interface FaithCoreServiceContract {
@@ -557,6 +583,8 @@ export function assertFaithCoreContract(value: unknown): asserts value is FaithC
     !core
     || typeof core !== "object"
     || core.apiVersion !== FAITH_CORE_API_VERSION
+    || typeof core.capabilities?.has !== "function"
+    || typeof core.capabilities?.all !== "function"
     || typeof core.createBusinessScope !== "function"
     || typeof core.adapter?.normalize !== "function"
     || typeof core.adapter?.resolve !== "function"

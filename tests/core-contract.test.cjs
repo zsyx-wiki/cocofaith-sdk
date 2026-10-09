@@ -22,3 +22,7 @@ test('Core contract accepts structural implementations and rejects incompatible 
   assert.doesNotThrow(() => assertFaithCoreContract(core))
   assert.throws(() => assertFaithCoreContract({ ...core, apiVersion: '4.0' }), /Core API 3\.0/)
 })
+
+test('Core contract rejects missing capability inspection', () => {
+  assert.throws(() => assertFaithCoreContract({ apiVersion: '3.0' }), /Core API/)
+})
