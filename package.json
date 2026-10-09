@@ -32,6 +32,11 @@
       "types": "./lib/gameplay/index.d.ts",
       "import": "./lib/gameplay/index.mjs",
       "require": "./lib/gameplay/index.js"
+    },
+    "./testing": {
+      "types": "./lib/testing/index.d.ts",
+      "import": "./lib/testing/index.mjs",
+      "require": "./lib/testing/index.js"
     }
   },
   "files": [
@@ -41,7 +46,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests/types",
     "test": "npm run typecheck && npm run build && node --test tests/*.test.cjs",
     "prepublishOnly": "npm test"
   },

@@ -5,6 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
     "core/index": "src/core/index.ts",
     "gameplay/index": "src/gameplay/index.ts",
+    "testing/index": "src/testing/index.ts",
   },
   outDir: "lib",
   format: ["cjs", "esm"],
