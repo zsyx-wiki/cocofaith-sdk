@@ -104,8 +104,8 @@ export interface FaithBusinessFaithsApi {
         metadata?: Record<string, unknown>;
     }): Promise<Readonly<FaithDefinition>>;
     unregisterDynamic(name: string, creatorUid?: number): Promise<boolean>;
-    setPrayerWord(name: string, word: string): Promise<Readonly<FaithDefinition>>;
-    setCustomProfession(name: string, type: string, professionName: string): Promise<Readonly<FaithDefinition>>;
+    setPrayerWord(name: string, word: string, creatorUid?: number): Promise<Readonly<FaithDefinition>>;
+    setCustomProfession(name: string, type: string, professionName: string, creatorUid?: number): Promise<Readonly<FaithDefinition>>;
 }
 export interface FaithBusinessPermissionsApi {
     register(permission: string, policy: unknown): FaithDisposable;

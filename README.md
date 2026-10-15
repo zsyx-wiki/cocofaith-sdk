@@ -5,7 +5,7 @@
 
   <p>
     <img alt="Koishi" src="https://img.shields.io/badge/Koishi-4.16%2B-60a5fa?style=flat-square">
-    <img alt="Version" src="https://img.shields.io/badge/version-3.0.0--alpha.4-a78bfa?style=flat-square">
+    <img alt="Version" src="https://img.shields.io/badge/version-3.0.0--alpha.5-a78bfa?style=flat-square">
     <img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-52b788?style=flat-square">
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript&logoColor=white">
   </p>
@@ -18,10 +18,10 @@
 ## 安装
 
 ```sh
-npm install @mueo/cocofaith-sdk@alpha
+npm install cocofaith-sdk@alpha
 ```
 
-Koishi 环境要求 4.16+。运行玩法需要启用 CoCoFaith Core、Business 和对应平台的 Adapter。
+Koishi 环境要求 4.16+。运行玩法需要启用 CoCoFaith和对应平台的 Adapter。
 
 ## 快速开始
 
@@ -33,7 +33,7 @@ import {
   defineGameplay,
   defineGameplayConfig,
   gameplayInteger,
-} from '@mueo/cocofaith-sdk/gameplay'
+} from 'cocofaith-sdk/gameplay'
 
 const config = defineGameplayConfig({
   gold: gameplayInteger(50, { min: 0 }),
@@ -59,7 +59,7 @@ export const rewardGameplay = defineGameplay({
 ```ts
 // index.ts
 import type { Context } from 'koishi'
-import type {} from '@mueo/koishi-plugin-cocofaith-business'
+import type {} from 'koishi-plugin-cocofaith/business'
 import { rewardGameplay } from './gameplay'
 
 export const name = 'reward-example'
@@ -78,18 +78,18 @@ export function apply(ctx: Context) {
 
 | 导入路径 | 用途 |
 | --- | --- |
-| `@mueo/cocofaith-sdk/gameplay` | 玩法定义、配置、参数、状态、响应和扩展接口 |
-| `@mueo/cocofaith-sdk/core` | Core 服务、业务作用域和事务类型 |
-| `@mueo/cocofaith-sdk/testing` | 单用户玩法测试 |
-| `@mueo/cocofaith-sdk/protocol` | Business 与 Adapter 的事件和消息协议 |
-| `@mueo/cocofaith-sdk/runtime` | Business 宿主的命令执行工具 |
+| `cocofaith-sdk/gameplay` | 玩法定义、配置、参数、状态、响应和扩展接口 |
+| `cocofaith-sdk/core` | Core 服务、业务作用域和事务类型 |
+| `cocofaith-sdk/testing` | 单用户玩法测试 |
+| `cocofaith-sdk/protocol` | Business 与 Adapter 的事件和消息协议 |
+| `cocofaith-sdk/runtime` | Business 宿主的命令执行工具 |
 
 ## 测试
 
 ```ts
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createGameplayTestHarness } from '@mueo/cocofaith-sdk/testing'
+import { createGameplayTestHarness } from 'cocofaith-sdk/testing'
 import { rewardGameplay } from './gameplay'
 
 test('发放金币', async () => {
@@ -109,8 +109,7 @@ test('发放金币', async () => {
 
 ## 文档
 
-- [玩法开发](https://github.com/zsyx-wiki/koishi-plugin-cocofaith-business/blob/main/docs/gameplay.md)
-- [Core API](https://github.com/zsyx-wiki/koishi-plugin-cocofaith-business/blob/main/docs/core-api.md)
+- [开发文档](https://coco.zsyxwiki.top)
 - [更新日志](./CHANGELOG.md)
 
 ## 本地开发
@@ -123,3 +122,28 @@ npm test
 ## License
 
 GPL-3.0-or-later
+
+## Adapter 接入
+
+`cocofaith-sdk/adapter` 提供接入登记工具和 `FaithAdapterService` 契约。
+CoCoFaith 要求 `faithAdapter` 服务，Adapter 应先登记接入，再等待业务服务：
+
+```ts
+import { provideFaithAdapter } from 'cocofaith-sdk/adapter'
+import type { Context } from 'koishi'
+
+export function apply(ctx: Context) {
+  provideFaithAdapter(ctx, {
+    id: 'my-adapter', name: 'My Adapter', platform: 'example',
+    version: '1.0.0', mode: 'normal',
+  })
+  ctx.inject(['faithCore', 'faithBusiness'], (ctx) => {
+    // 在此注册平台消息处理，使用公共协议调用业务。
+  })
+}
+```
+
+不要在 Adapter 外层要求 `faithCore` / `faithBusiness`，否则会与 CoCoFaith 形成循环等待。
+多个 Adapter 共用注册表；卸载一个只移除其登记，最后一个卸载时撤销服务。
+`ctx.faithAdapter.list()` 返回接入信息，`has(platform)` 检查平台是否登记。
+两者表示接入插件已启用，不检查机器人在线状态。

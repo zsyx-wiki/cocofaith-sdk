@@ -1,6 +1,6 @@
 {
-  "name": "@mueo/cocofaith-sdk",
-  "version": "3.0.0-alpha.4",
+  "name": "cocofaith-sdk",
+  "version": "3.0.0-alpha.5",
   "description": "CoCoFaith v3 core contracts and gameplay development SDK",
   "author": "Mueo <mueo@mueoo.com>",
   "license": "GPL-3.0-or-later",
@@ -47,6 +47,11 @@
       "types": "./lib/protocol/index.d.ts",
       "import": "./lib/protocol/index.mjs",
       "require": "./lib/protocol/index.js"
+    },
+    "./adapter": {
+      "types": "./lib/adapter/index.d.ts",
+      "import": "./lib/adapter/index.js",
+      "require": "./lib/adapter/index.js"
     }
   },
   "files": [
