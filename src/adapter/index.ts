@@ -31,7 +31,9 @@ class AdapterRegistry implements FaithAdapterService {
   fork(ctx: Context, info: FaithAdapterInfo) {
     const key = Symbol(info.id);
     this.adapters.set(key, Object.freeze({ ...info }));
-    ctx.on("dispose", () => { this.adapters.delete(key); });
+    ctx.on("dispose", () => {
+      this.adapters.delete(key);
+    });
   }
 
   list(): readonly FaithAdapterInfo[] {
@@ -39,11 +41,33 @@ class AdapterRegistry implements FaithAdapterService {
   }
 
   has(platform: string): boolean {
-    return this.list().some(adapter => adapter.platform === platform);
+    return this.list().some((adapter) => adapter.platform === platform);
   }
 }
 
 /** 在等待 faithCore / faithBusiness 之前调用，避免与 CoCoFaith 形成依赖循环。 */
 export function provideFaithAdapter(ctx: Context, info: FaithAdapterInfo): void {
   ctx.plugin(AdapterRegistry, info);
+}
+
+export interface FaithAdapterServices {
+  faithCore: Pick<import("../core").FaithCoreServiceContract, "adapter">;
+  faithBusiness: import("../protocol").FaithBusinessAdapterContract;
+}
+
+/** 接入端只校验消息路由所需的服务，不绑定官方实现。 */
+export function assertFaithAdapterServices(
+  value: unknown,
+  adapterName: string,
+): asserts value is FaithAdapterServices {
+  const services = value as Partial<FaithAdapterServices> | null;
+  if (typeof services?.faithCore?.adapter?.resolve !== "function") {
+    throw new Error(`${adapterName} 需要已就绪的 faithCore 身份服务`);
+  }
+  if (typeof services?.faithBusiness?.dispatch !== "function") {
+    throw new Error(`${adapterName} 需要已就绪的 faithBusiness 路由服务`);
+  }
+  if (typeof services.faithBusiness.acceptsCommand !== "function") {
+    throw new Error(`${adapterName} 需要 faithBusiness.acceptsCommand() 命令筛选接口`);
+  }
 }
