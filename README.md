@@ -5,7 +5,7 @@
 
   <p>
     <img alt="Koishi" src="https://img.shields.io/badge/Koishi-4.16%2B-60a5fa?style=flat-square">
-    <img alt="Version" src="https://img.shields.io/badge/version-3.0.0--alpha.5-a78bfa?style=flat-square">
+    <img alt="Version" src="https://img.shields.io/badge/version-3.0.0--rc.1-a78bfa?style=flat-square">
     <img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-52b788?style=flat-square">
     <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript&logoColor=white">
   </p>
@@ -18,7 +18,7 @@
 ## 安装
 
 ```sh
-npm install cocofaith-sdk@alpha
+npm install cocofaith-sdk@rc
 ```
 
 Koishi 环境要求 4.16+。运行玩法需要启用 CoCoFaith 和对应平台的 Adapter。

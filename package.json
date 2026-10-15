@@ -1,6 +1,6 @@
 {
   "name": "cocofaith-sdk",
-  "version": "3.0.0-alpha.5",
+  "version": "3.0.0-rc.1",
   "description": "CoCoFaith v3 core contracts and gameplay development SDK",
   "author": "Mueo <mueo@mueoo.com>",
   "license": "GPL-3.0-or-later",
