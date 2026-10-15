@@ -3,27 +3,13 @@ import type {
   FaithAtomicScope,
   FaithBusinessCoreScope,
   FaithDisposable,
-  IdentityInput,
 } from "../core";
 import type { GameplayParameters } from "./arguments";
 import type { GameplayConfigDefinition } from "./config";
 import type { GameplayOutput } from "./result";
 import type { GameplayStateDefinition } from "./state";
 export type GameplayScene = "group" | "private";
-export interface GameplayEvent {
-  readonly uid: number | null;
-  readonly identity?: Readonly<IdentityInput>;
-  readonly scene: GameplayScene;
-  readonly content: string;
-  readonly channelId?: string;
-  readonly roomKey?: string;
-  readonly eventId?: string;
-  readonly displayName?: string;
-  readonly adapter?: Readonly<{
-    name: string;
-    version: string;
-  }>;
-}
+export type GameplayEvent = import("../protocol").BusinessEvent;
 export interface GameplaySetupContext<C extends Record<string, unknown>> {
   readonly name: string;
   readonly core: FaithBusinessCoreScope;
@@ -166,6 +152,9 @@ export interface GameplayDefinition<
   readonly dependencies?: readonly string[];
   readonly config?: GameplayConfigDefinition<C>;
   readonly state?: GameplayStateDefinition<D, P>;
+  ready?(service: S): void | Promise<void>;
+  /** Update the existing service without replacing registrations held by other gameplays. */
+  reload?(service: S, config: Readonly<C>, previousConfig: Readonly<C>): void | Promise<void>;
   dispose?(service: S): void | Promise<void>;
   setup?(context: GameplaySetupContext<C>): S | Promise<S>;
   readonly commands: readonly GameplayCommandDefinition<C, S, D, P, A>[];

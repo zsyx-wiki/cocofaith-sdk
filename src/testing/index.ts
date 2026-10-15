@@ -1,7 +1,7 @@
 import { CallbackDisposable, type FaithAtomicScope, type FaithBusinessCoreScope, type FaithCoreUserData, type UserValueDelta } from "../core";
 import { normalizeGameplayResult, type GameplayResult } from "../gameplay/result";
 import { executeGameplayCommand } from "../gameplay/runtime";
-import type { GameplayDefinition, GameplayEvent } from "../gameplay/types";
+import type { GameplayDefinition, GameplayEvent, GameplaySetupContext } from "../gameplay/types";
 export interface GameplayTestUser extends FaithCoreUserData {
     gold: number;
     ascension_score: number;
@@ -176,7 +176,7 @@ export function createGameplayTestHarness<C extends Record<string, unknown>, S, 
         if (ready)
             return;
         try {
-            service = definition.setup ? await definition.setup({
+            const context: GameplaySetupContext<C> = {
                 name: definition.name, core, config,
                 track: resource => {
                     callbacks.push(() => resource.dispose());
@@ -197,11 +197,17 @@ export function createGameplayTestHarness<C extends Record<string, unknown>, S, 
                     throw new Error("测试宿主未配置贡献点");
                 },
                 collect: async () => ({ results: [], failures: [] }),
-            }) : undefined as S;
+            };
+            service = definition.setup ? await definition.setup(context) : undefined as S;
             ready = true;
+            await definition.ready?.(service);
         }
         catch (error) {
             const errors: unknown[] = [error];
+            if (ready) {
+                ready = false;
+                try { await definition.dispose?.(service); } catch (cleanupError) { errors.push(cleanupError); }
+            }
             for (const callback of callbacks.splice(0).reverse()) {
                 try {
                     await callback();

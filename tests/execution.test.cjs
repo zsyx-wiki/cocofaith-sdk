@@ -86,3 +86,17 @@ test('test host cleans resources after setup and disposal failures', async () =>
   await host.dispose()
   assert.equal(cleaned, 2)
 })
+
+test('test host runs ready before commands and disposes a service whose ready fails', async () => {
+  const events = []
+  const host = createGameplayTestHarness(g.defineGameplay({ name: 'ready_test',
+    setup() { events.push('setup'); return { value: 1 } },
+    ready(service) { events.push(`ready:${service.value}`); throw new Error('ready failed') },
+    dispose(service) { events.push(`dispose:${service.value}`) },
+    commands: { read: { triggers: ['read'], run() { events.push('run'); return 'ok' } } },
+  }))
+  await assert.rejects(host.run('read'), /ready failed/)
+  assert.deepEqual(events, ['setup', 'ready:1', 'dispose:1'])
+  await host.dispose()
+  assert.deepEqual(events, ['setup', 'ready:1', 'dispose:1'])
+})
