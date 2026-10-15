@@ -21,7 +21,7 @@
 npm install cocofaith-sdk@alpha
 ```
 
-Koishi 环境要求 4.16+。运行玩法需要启用 CoCoFaith和对应平台的 Adapter。
+Koishi 环境要求 4.16+。运行玩法需要启用 CoCoFaith 和对应平台的 Adapter。
 
 ## 快速开始
 
@@ -32,6 +32,7 @@ Koishi 环境要求 4.16+。运行玩法需要启用 CoCoFaith和对应平台的
 import {
   defineGameplay,
   defineGameplayConfig,
+  defineGameplayState,
   gameplayInteger,
 } from 'cocofaith-sdk/gameplay'
 
@@ -42,34 +43,22 @@ const config = defineGameplayConfig({
 export const rewardGameplay = defineGameplay({
   name: 'reward_example',
   config,
-  commands: [{
-    id: 'claim',
+  state: defineGameplayState({ fields: { count: gameplayInteger(0, { min: 0 }) } }),
+  commands: { claim: {
     triggers: ['奖励示例'],
     atomic: 'user',
-    async run({ economy, config }) {
+    async run({ economy, config, state }) {
       const reward = await economy.reward({ gold: config.gold })
+      state.data.count++
       return `获得 ${reward.applied.gold ?? 0} 金币。`
     },
-  }],
+  } },
 })
 ```
 
-在 Koishi 插件中注册：
+内置玩法在各自入口声明，通过 CoCoFaith 构建时收集。当前版本不提供独立插件在运行期间注册玩法的接入方式。
 
-```ts
-// index.ts
-import type { Context } from 'koishi'
-import type {} from 'koishi-plugin-cocofaith/business'
-import { rewardGameplay } from './gameplay'
-
-export const name = 'reward-example'
-export const inject = ['faithBusiness'] as const
-
-export function apply(ctx: Context) {
-  const registration = ctx.faithBusiness.register(rewardGameplay)
-  ctx.on('dispose', () => registration.dispose())
-}
-```
+命令表的键就是命令 ID，也支持原有数组写法。状态的 `fields` 与配置共用字段定义，自动提供默认值、校验和类型推导。
 
 `atomic: 'user'` 将资产修改和玩法状态放在同一事务中，执行失败时回滚。
 命令可以返回字符串，也可以使用 `text()`、`image()`、`mixed()` 和 `silent()`。

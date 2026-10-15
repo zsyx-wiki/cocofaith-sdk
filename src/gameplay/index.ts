@@ -1,3 +1,4 @@
+export * from "./commands";
 export * from "./arguments";
 export * from "./config";
 export * from "./definition";
